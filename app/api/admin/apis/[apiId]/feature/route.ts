@@ -14,17 +14,30 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
-    const api = await prisma.aPI.findUnique({ where: { id: params.apiId } });
-    if (!api) {
-      return NextResponse.json({ error: "API not found" }, { status: 404 });
-    }
 
-    const isFeatured =
-      typeof body.isFeatured === "boolean" ? body.isFeatured : !api.isFeatured;
+    let isFeatured: boolean;
+    if (typeof body.isFeatured === "boolean") {
+      isFeatured = body.isFeatured;
+    } else {
+      const current = await prisma.aPI.findUnique({
+        where: { id: params.apiId },
+        select: { isFeatured: true },
+      });
+      if (!current) {
+        return NextResponse.json({ error: "API not found" }, { status: 404 });
+      }
+      isFeatured = !current.isFeatured;
+    }
 
     const updated = await prisma.aPI.update({
       where: { id: params.apiId },
       data: { isFeatured },
+      select: {
+        id: true,
+        name: true,
+        isFeatured: true,
+        isApproved: true,
+      },
     });
 
     return NextResponse.json(updated);

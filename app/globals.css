@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-display: "Syne", system-ui, sans-serif;
-  --font-sans: "DM Sans", system-ui, sans-serif;
+  /* --font-sans / --font-display are set by next/font on <html> */
 
   --color-primary: #0d7377;
   --color-primary-hover: #0a5c5f;
@@ -51,7 +50,6 @@ body {
     linear-gradient(rgba(11, 18, 32, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(11, 18, 32, 0.035) 1px, transparent 1px);
   background-size: auto, 48px 48px, 48px 48px;
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

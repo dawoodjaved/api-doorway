@@ -15,6 +15,7 @@ export async function POST(
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
+      select: { role: true },
     });
 
     if (!user || user.role !== "admin") {
@@ -24,6 +25,12 @@ export async function POST(
     const api = await prisma.aPI.update({
       where: { id: params.apiId },
       data: { isApproved: true },
+      select: {
+        id: true,
+        name: true,
+        isApproved: true,
+        isFeatured: true,
+      },
     });
 
     return NextResponse.json(api);

@@ -78,7 +78,33 @@ export async function GET(request: NextRequest) {
 
     const apis = await prisma.aPI.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        category: true,
+        logo: true,
+        baseUrl: true,
+        authType: true,
+        https: true,
+        cors: true,
+        docsUrl: true,
+        openapiUrl: true,
+        hasOpenApi: true,
+        tags: true,
+        arenaScore: true,
+        endpointCount: true,
+        tryReady: true,
+        lastSyncedAt: true,
+        isPublic: true,
+        isApproved: true,
+        isFeatured: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+        source: true,
+        sourceKey: true,
         user: {
           select: {
             name: true,
@@ -88,15 +114,19 @@ export async function GET(request: NextRequest) {
         versions: {
           orderBy: { createdAt: "desc" },
           take: 1,
-        },
-        reviews: {
           select: {
-            rating: true,
+            id: true,
+            version: true,
+            isDeprecated: true,
+            deprecationDate: true,
+            changelog: true,
+            createdAt: true,
           },
         },
         _count: {
           select: {
             subscriptions: true,
+            reviews: true,
           },
         },
       },
@@ -104,25 +134,40 @@ export async function GET(request: NextRequest) {
       take,
     });
 
-    const apisWithStats = apis.map((api) => {
-      const ratings = api.reviews.map((r) => r.rating);
-      const avgRating =
-        ratings.length > 0
-          ? ratings.reduce((a, b) => a + b, 0) / ratings.length
-          : 0;
+    const ratingAgg =
+      apis.length > 0
+        ? await prisma.review.groupBy({
+            by: ["apiId"],
+            where: { apiId: { in: apis.map((a) => a.id) } },
+            _avg: { rating: true },
+            _count: { rating: true },
+          })
+        : [];
+    const ratingByApi = new Map(
+      ratingAgg.map((r) => [
+        r.apiId,
+        { avg: r._avg.rating || 0, count: r._count.rating },
+      ])
+    );
 
+    const apisWithStats = apis.map((api) => {
+      const ratingInfo = ratingByApi.get(api.id);
       const { source: _s, sourceKey: _sk, ...rest } = api;
       return {
         ...rest,
         // Hide internal sync tags from the product UI
         tags: (api.tags || []).filter((t) => !t.startsWith("src:")),
-        rating: avgRating,
-        reviewCount: api.reviews.length,
+        rating: ratingInfo?.avg || 0,
+        reviewCount: ratingInfo?.count ?? api._count.reviews,
         subscriberCount: api._count.subscriptions,
       };
     });
 
-    return NextResponse.json(apisWithStats);
+    return NextResponse.json(apisWithStats, {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
+    });
   } catch (error) {
     console.error("Error fetching APIs:", error);
     // Always return an array, even on error

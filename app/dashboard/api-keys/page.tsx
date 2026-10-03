@@ -33,7 +33,7 @@ export default function APIKeysPage() {
 
   useEffect(() => {
     fetchKeys();
-    fetch("/api/apis")
+    fetch("/api/apis?limit=50&sort=score")
       .then((r) => r.json())
       .then((d) => setApis(Array.isArray(d) ? d : []));
   }, []);

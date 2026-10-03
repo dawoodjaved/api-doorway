@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { validateApiKey, hasScope } from "@/lib/gateway/auth";
 import { checkRateLimit } from "@/lib/gateway/rate-limiter";
 import {
@@ -66,16 +67,24 @@ function matchEndpointPath(
   );
 }
 
-function resolveUpstream(
-  api: { baseUrl: string | null },
-  openApiSpec: any
-): string | null {
-  if (api.baseUrl) return api.baseUrl.replace(/\/$/, "");
-  const serverUrl = openApiSpec?.servers?.[0]?.url;
-  if (typeof serverUrl === "string" && serverUrl) {
-    return serverUrl.replace(/\/$/, "");
+function truncateJson(
+  value: unknown,
+  maxChars = 2000
+): Prisma.InputJsonValue | typeof Prisma.JsonNull {
+  if (value == null) return Prisma.JsonNull;
+  try {
+    const raw = typeof value === "string" ? value : JSON.stringify(value);
+    if (raw.length <= maxChars) {
+      return (
+        typeof value === "object" && value !== null
+          ? value
+          : { value }
+      ) as Prisma.InputJsonValue;
+    }
+    return { truncated: true, preview: raw.slice(0, maxChars) };
+  } catch {
+    return { truncated: true };
   }
-  return null;
 }
 
 async function handleGatewayRequest(
@@ -143,10 +152,26 @@ async function handleGatewayRequest(
   const path = "/" + pathParts.join("/");
   const query = request.nextUrl.search;
 
+  // Single query: API + matching version + endpoints for this method (no N+1)
   const api = await prisma.aPI.findUnique({
     where: { slug: apiSlug },
-    include: {
-      versions: { where: { version } },
+    select: {
+      id: true,
+      name: true,
+      baseUrl: true,
+      versions: {
+        where: { version },
+        select: {
+          id: true,
+          version: true,
+          isDeprecated: true,
+          deprecationDate: true,
+          endpoints: {
+            where: { method },
+            select: { id: true, path: true, method: true },
+          },
+        },
+      },
     },
   });
 
@@ -173,11 +198,8 @@ async function handleGatewayRequest(
     }
   }
 
-  const endpoints = await prisma.endpoint.findMany({
-    where: { versionId: apiVersion.id, method },
-  });
   const endpoint =
-    endpoints.find((e) => matchEndpointPath(e.path, path)) || null;
+    apiVersion.endpoints.find((e) => matchEndpointPath(e.path, path)) || null;
 
   if (!endpoint) {
     return NextResponse.json(
@@ -216,7 +238,20 @@ async function handleGatewayRequest(
   let responseData: any;
   let responseText: string | null = null;
 
-  const upstream = resolveUpstream(api, apiVersion.openApiSpec);
+  // Prefer stored baseUrl; only peek OpenAPI servers[0].url when missing
+  let upstream = api.baseUrl?.replace(/\/$/, "") || null;
+  if (!upstream) {
+    const rows = await prisma.$queryRaw<Array<{ url: string | null }>>`
+      SELECT ("openApiSpec"->'servers'->0->>'url') AS url
+      FROM "APIVersion"
+      WHERE id = ${apiVersion.id}
+      LIMIT 1
+    `;
+    const serverUrl = rows[0]?.url;
+    if (typeof serverUrl === "string" && serverUrl) {
+      upstream = serverUrl.replace(/\/$/, "");
+    }
+  }
   // Never forward the APIDoorway API key to upstream — it was only used for gateway auth.
   const forwardHeaders: Record<string, string> = {
     "Content-Type": request.headers.get("content-type") || "application/json",
@@ -303,24 +338,28 @@ async function handleGatewayRequest(
     }
   }
 
+  // Log off the critical path so clients get the upstream response sooner
   if (keyValidation.keyId) {
-    await prisma.requestLog.create({
-      data: {
-        apiKeyId: keyValidation.keyId,
-        endpointId: endpoint.id,
-        method,
-        path,
-        statusCode,
-        latency,
-        ipAddress: request.headers.get("x-forwarded-for") || "unknown",
-        userAgent: request.headers.get("user-agent") || null,
-        requestBody: requestBodyJson,
-        responseBody:
-          typeof responseData === "object"
-            ? responseData
-            : { raw: String(responseData).slice(0, 2000) },
-      },
-    });
+    void prisma.requestLog
+      .create({
+        data: {
+          apiKeyId: keyValidation.keyId,
+          endpointId: endpoint.id,
+          method,
+          path,
+          statusCode,
+          latency,
+          ipAddress: request.headers.get("x-forwarded-for") || "unknown",
+          userAgent: request.headers.get("user-agent") || null,
+          requestBody: truncateJson(requestBodyJson),
+          responseBody: truncateJson(
+            typeof responseData === "object"
+              ? responseData
+              : { raw: String(responseData) }
+          ),
+        },
+      })
+      .catch((err) => console.error("requestLog create failed:", err));
   }
 
   if (responseText !== null && typeof responseData?.raw === "string") {

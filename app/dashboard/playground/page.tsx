@@ -15,8 +15,12 @@ export default function PlaygroundPage() {
 
   useEffect(() => {
     if (!session) return;
-    fetch("/api/apis").then((r) => r.json()).then((d) => setApis(Array.isArray(d) ? d : []));
-    fetch("/api/api-keys").then((r) => r.json()).then((d) => setKeys(Array.isArray(d) ? d : []));
+    fetch("/api/apis?limit=50&sort=score")
+      .then((r) => r.json())
+      .then((d) => setApis(Array.isArray(d) ? d : []));
+    fetch("/api/api-keys")
+      .then((r) => r.json())
+      .then((d) => setKeys(Array.isArray(d) ? d : []));
   }, [session]);
 
   useEffect(() => {

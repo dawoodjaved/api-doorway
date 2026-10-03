@@ -16,19 +16,32 @@ export async function GET(request: NextRequest) {
     const apiId = searchParams.get("apiId");
     const userId = searchParams.get("userId");
 
-    const where: any = {};
+    if (!apiId && !userId) {
+      return NextResponse.json(
+        { error: "apiId or userId is required" },
+        { status: 400 }
+      );
+    }
+
+    const where: { apiId?: string; userId?: string } = {};
     if (apiId) where.apiId = apiId;
     if (userId) where.userId = userId;
 
     const reviews = await prisma.review.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        updatedAt: true,
+        userId: true,
+        apiId: true,
         user: {
           select: {
             id: true,
             name: true,
             image: true,
-            email: true,
           },
         },
         api: {

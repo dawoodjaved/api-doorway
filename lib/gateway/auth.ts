@@ -13,22 +13,32 @@ export async function validateApiKey(
 }> {
   const hashed = hashApiKey(apiKey);
 
-  // Support both hashed keys (new) and legacy plaintext keys
-  let key = await prisma.aPIKey.findFirst({
-    where: {
-      OR: [{ key: hashed }, { key: apiKey }],
-    },
-    include: {
-      api: true,
-      user: {
-        include: {
-          subscriptions: {
-            where: { status: "active" },
-          },
-        },
-      },
+  // Prefer unique hashed lookup; fall back to legacy plaintext keys
+  let key = await prisma.aPIKey.findUnique({
+    where: { key: hashed },
+    select: {
+      id: true,
+      userId: true,
+      apiId: true,
+      scopes: true,
+      isActive: true,
+      expiresAt: true,
     },
   });
+
+  if (!key) {
+    key = await prisma.aPIKey.findUnique({
+      where: { key: apiKey },
+      select: {
+        id: true,
+        userId: true,
+        apiId: true,
+        scopes: true,
+        isActive: true,
+        expiresAt: true,
+      },
+    });
+  }
 
   if (!key || !key.isActive) {
     return { valid: false };
@@ -38,15 +48,26 @@ export async function validateApiKey(
     return { valid: false };
   }
 
-  await prisma.aPIKey.update({
-    where: { id: key.id },
-    data: { lastUsedAt: new Date() },
-  });
+  // Do not block the request on last-used bookkeeping
+  void prisma.aPIKey
+    .update({
+      where: { id: key.id },
+      data: { lastUsedAt: new Date() },
+    })
+    .catch(() => {});
 
-  const subscription = key.user.subscriptions.find(
-    (sub) => sub.apiId === key.apiId
-  );
-  const plan = subscription?.plan || "free";
+  // Only the subscription for this API (not all active subs for the user)
+  const subscription = await prisma.subscription.findUnique({
+    where: {
+      userId_apiId: {
+        userId: key.userId,
+        apiId: key.apiId,
+      },
+    },
+    select: { plan: true, status: true },
+  });
+  const plan =
+    subscription?.status === "active" ? subscription.plan || "free" : "free";
 
   return {
     valid: true,

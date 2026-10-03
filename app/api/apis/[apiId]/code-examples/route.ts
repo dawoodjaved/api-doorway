@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/get-session";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateCodeExamples } from "@/lib/services/code-examples";
 
@@ -14,23 +12,28 @@ export async function GET(
     const endpointPath = searchParams.get("path");
     const method = searchParams.get("method");
 
-    // Get API and version
     const api = await prisma.aPI.findUnique({
       where: { id: params.apiId },
-      include: {
+      select: {
+        name: true,
         versions: {
           where: version ? { version } : undefined,
           orderBy: { createdAt: "desc" },
           take: 1,
-          include: {
-            endpoints: endpointPath && method
-              ? {
-                  where: {
-                    path: endpointPath,
-                    method: method.toUpperCase(),
-                  },
-                }
-              : undefined,
+          select: {
+            version: true,
+            openApiSpec: true,
+            endpoints:
+              endpointPath && method
+                ? {
+                    where: {
+                      path: endpointPath,
+                      method: method.toUpperCase(),
+                    },
+                    select: { method: true, path: true },
+                    take: 1,
+                  }
+                : false,
           },
         },
       },
@@ -50,16 +53,14 @@ export async function GET(
     const apiVersion = api.versions[0];
     const openApiSpec = apiVersion.openApiSpec as any;
 
-    // Get endpoint if specified
     const endpoint =
-      endpointPath && method && apiVersion.endpoints.length > 0
+      endpointPath && method && apiVersion.endpoints?.length > 0
         ? {
             method: apiVersion.endpoints[0].method,
             path: apiVersion.endpoints[0].path,
           }
         : undefined;
 
-    // Generate code examples
     const examples = generateCodeExamples(openApiSpec, api.name, endpoint);
 
     return NextResponse.json({

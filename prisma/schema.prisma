@@ -48,6 +48,7 @@ model Account {
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([provider, providerAccountId])
+  @@index([userId, provider])
 }
 
 model Session {
@@ -104,6 +105,11 @@ model API {
   @@index([arenaScore])
   @@index([hasOpenApi])
   @@index([sourceKey])
+  @@index([userId])
+  @@index([tryReady])
+  @@index([isPublic, isApproved, arenaScore])
+  @@index([isPublic, isApproved, createdAt])
+  @@index([isPublic, isApproved, isFeatured])
 }
 
 model APIVersion {
@@ -118,6 +124,7 @@ model APIVersion {
   endpoints       Endpoint[]
   createdAt       DateTime   @default(now())
   @@unique([apiId, version])
+  @@index([apiId, createdAt])
 }
 
 model Endpoint {
@@ -148,6 +155,9 @@ model APIKey {
   createdAt   DateTime     @default(now())
   expiresAt   DateTime?
   @@index([keyPrefix])
+  @@index([userId])
+  @@index([userId, apiId])
+  @@index([apiId])
 }
 
 model Subscription {
@@ -165,6 +175,8 @@ model Subscription {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   @@unique([userId, apiId])
+  @@index([stripeSubscriptionId])
+  @@index([userId, status])
 }
 
 model Invoice {
@@ -180,6 +192,8 @@ model Invoice {
   stripePdfUrl String?
   stripeInvoiceId String?
   createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model Payout {
@@ -205,6 +219,7 @@ model Review {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@unique([userId, apiId])
+  @@index([apiId])
 }
 
 model RequestLog {
@@ -254,4 +269,6 @@ model Ticket {
   priority    String   @default("medium") // low, medium, high, urgent
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }

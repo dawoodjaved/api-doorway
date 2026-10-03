@@ -18,7 +18,7 @@ export default function CompareClient() {
   );
 
   useEffect(() => {
-    fetch("/api/apis")
+    fetch("/api/apis?limit=100&sort=score")
       .then((r) => r.json())
       .then((data) => {
         const list = Array.isArray(data) ? data : [];

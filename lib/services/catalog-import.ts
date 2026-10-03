@@ -238,7 +238,10 @@ export async function importFromAPIsGuru(
           continue;
         }
 
-        const existing = await prisma.aPI.findUnique({ where: { slug } });
+        const existing = await prisma.aPI.findUnique({
+          where: { slug },
+          select: { id: true },
+        });
         if (existing) {
           skipped++;
           continue;
@@ -249,7 +252,7 @@ export async function importFromAPIsGuru(
           .trim()
           .substring(0, 2000);
 
-        await prisma.aPI.create({
+        const created = await prisma.aPI.create({
           data: {
             name,
             slug,
@@ -262,13 +265,11 @@ export async function importFromAPIsGuru(
             userId: systemUserId,
             source: "openapi",
           },
+          select: { id: true },
         });
 
-        const created = await prisma.aPI.findUnique({ where: { slug } });
-        if (!created) continue;
-
         const specUrl = api.openapi || api.swagger || "";
-        await prisma.aPIVersion.create({
+        const version = await prisma.aPIVersion.create({
           data: {
             apiId: created.id,
             version: "1.0.0",
@@ -282,21 +283,17 @@ export async function importFromAPIsGuru(
               ? `Catalog import. OpenAPI: ${specUrl}`
               : "Catalog import",
           },
+          select: { id: true },
         });
 
-        const version = await prisma.aPIVersion.findFirst({
-          where: { apiId: created.id },
+        await prisma.endpoint.create({
+          data: {
+            versionId: version.id,
+            method: "GET",
+            path: "/",
+            description: `Base URL: ${api.url}`,
+          },
         });
-        if (version) {
-          await prisma.endpoint.create({
-            data: {
-              versionId: version.id,
-              method: "GET",
-              path: "/",
-              description: `Base URL: ${api.url}`,
-            },
-          });
-        }
 
         imported++;
       } catch (err) {
@@ -356,7 +353,10 @@ export async function importPublicAPIs(
           continue;
         }
 
-        const existing = await prisma.aPI.findUnique({ where: { slug } });
+        const existing = await prisma.aPI.findUnique({
+          where: { slug },
+          select: { id: true },
+        });
         if (existing) {
           skipped++;
           continue;
@@ -384,9 +384,10 @@ export async function importPublicAPIs(
             cors: api.Cors || "unknown",
             docsUrl: api.Link,
           },
+          select: { id: true },
         });
 
-        await prisma.aPIVersion.create({
+        const version = await prisma.aPIVersion.create({
           data: {
             apiId: createdAPI.id,
             version: "1.0.0",
@@ -409,15 +410,12 @@ export async function importPublicAPIs(
             },
             changelog: `Catalog import\nAuth: ${api.Auth || "None"}\nHTTPS: ${api.HTTPS}\nCORS: ${api.Cors || "Unknown"}`,
           },
+          select: { id: true },
         });
 
         await prisma.endpoint.create({
           data: {
-            versionId: (
-              await prisma.aPIVersion.findFirst({
-                where: { apiId: createdAPI.id },
-              })
-            )!.id,
+            versionId: version.id,
             method: "GET",
             path: "/",
             description: `Access ${api.API} API`,

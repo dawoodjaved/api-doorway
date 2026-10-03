@@ -27,17 +27,29 @@ export async function GET(request: NextRequest) {
 
     const keys = await prisma.aPIKey.findMany({
       where: { userId: session.user.id },
-      include: {
+      select: {
+        id: true,
+        keyPrefix: true,
+        name: true,
+        userId: true,
+        apiId: true,
+        scopes: true,
+        environment: true,
+        isActive: true,
+        lastUsedAt: true,
+        createdAt: true,
+        expiresAt: true,
         api: {
           select: { id: true, name: true, slug: true },
         },
       },
       orderBy: { createdAt: "desc" },
+      take: 100,
     });
 
     // Never return hashed key material
     return NextResponse.json(
-      keys.map(({ key, ...rest }) => ({
+      keys.map((rest) => ({
         ...rest,
         key: undefined,
         keyHint: rest.keyPrefix || "adw_****",
@@ -61,6 +73,7 @@ export async function POST(request: NextRequest) {
 
     const api = await prisma.aPI.findUnique({
       where: { id: validated.apiId },
+      select: { id: true, userId: true, isApproved: true },
     });
 
     if (!api) {
@@ -68,16 +81,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (api.userId !== session.user.id) {
-      const subscription = await prisma.subscription.findFirst({
+      const subscription = await prisma.subscription.findUnique({
         where: {
-          userId: session.user.id,
-          apiId: validated.apiId,
-          status: "active",
+          userId_apiId: {
+            userId: session.user.id,
+            apiId: validated.apiId,
+          },
         },
+        select: { status: true },
       });
 
       // Allow keys for approved public APIs on free tier (implicit free access)
-      if (!subscription && !api.isApproved) {
+      if (subscription?.status !== "active" && !api.isApproved) {
         return NextResponse.json(
           { error: "You need access to this API first" },
           { status: 403 }

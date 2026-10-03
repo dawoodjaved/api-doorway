@@ -23,6 +23,7 @@ export default function MarketplacePage() {
   const [apis, setApis] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [featured, setFeatured] = useState<any[]>([]);
   const [openapiOnly, setOpenapiOnly] = useState(false);
@@ -33,65 +34,71 @@ export default function MarketplacePage() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
     fetch("/api/catalog/stats")
       .then((r) => r.json())
       .then(setStats)
       .catch(() => setStats(null));
+
+    fetch("/api/apis?featured=true&sort=score&limit=8")
+      .then((r) => r.json())
+      .then((data) => setFeatured(Array.isArray(data) ? data.slice(0, 4) : []))
+      .catch(() => setFeatured([]));
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const fetchAPIs = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("limit", "48");
+        params.set("sort", "score");
+        if (selectedCategory !== "All") {
+          params.append("category", selectedCategory);
+        }
+        if (debouncedSearch) params.append("search", debouncedSearch);
+        if (openapiOnly) params.append("openapi", "true");
+        if (tryReadyOnly) params.append("tryReady", "true");
+        if (authFilter !== "all") params.append("auth", authFilter);
+        if (minScore > 0) params.append("minScore", String(minScore));
+        const res = await fetch(`/api/apis?${params}`);
+        let data = await res.json();
+        if (!Array.isArray(data)) data = [];
+        // If try-ready filter yields nothing yet (pre-hydrate), fall back to scored list
+        if (tryReadyOnly && data.length === 0 && !debouncedSearch) {
+          params.delete("tryReady");
+          const res2 = await fetch(`/api/apis?${params}`);
+          data = await res2.json();
+          if (!Array.isArray(data)) data = [];
+        }
+        if (httpsOnly) data = data.filter((a: any) => a.https !== false);
+        if (!cancelled) setApis(data);
+      } catch {
+        if (!cancelled) setApis([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     fetchAPIs();
-    fetchFeatured();
+    return () => {
+      cancelled = true;
+    };
   }, [
     selectedCategory,
-    search,
+    debouncedSearch,
     openapiOnly,
     authFilter,
     minScore,
     httpsOnly,
     tryReadyOnly,
   ]);
-
-  const fetchAPIs = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("limit", "120");
-      params.set("sort", "score");
-      if (selectedCategory !== "All") params.append("category", selectedCategory);
-      if (search) params.append("search", search);
-      if (openapiOnly) params.append("openapi", "true");
-      if (tryReadyOnly) params.append("tryReady", "true");
-      if (authFilter !== "all") params.append("auth", authFilter);
-      if (minScore > 0) params.append("minScore", String(minScore));
-      const res = await fetch(`/api/apis?${params}`);
-      let data = await res.json();
-      if (!Array.isArray(data)) data = [];
-      // If try-ready filter yields nothing yet (pre-hydrate), fall back to scored list
-      if (tryReadyOnly && data.length === 0 && !search) {
-        params.delete("tryReady");
-        const res2 = await fetch(`/api/apis?${params}`);
-        data = await res2.json();
-        if (!Array.isArray(data)) data = [];
-      }
-      if (httpsOnly) data = data.filter((a: any) => a.https !== false);
-      setApis(data);
-    } catch {
-      setApis([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFeatured = async () => {
-    try {
-      const res = await fetch("/api/apis?featured=true&sort=score&limit=8");
-      const data = await res.json();
-      setFeatured(Array.isArray(data) ? data.slice(0, 4) : []);
-    } catch {
-      setFeatured([]);
-    }
-  };
 
   const lastSync = stats?.lastSyncedAt
     ? new Date(stats.lastSyncedAt).toLocaleDateString()

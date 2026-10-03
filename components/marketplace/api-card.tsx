@@ -52,6 +52,10 @@ export function APICard({ api }: APICardProps) {
           <img
             src={api.logo!}
             alt={`${api.name} logo`}
+            width={44}
+            height={44}
+            loading="lazy"
+            decoding="async"
             className="h-11 w-11 rounded-md object-cover bg-accent-soft"
             onError={() => setImgFailed(true)}
           />

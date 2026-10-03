@@ -1,14 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Star, Code, BookOpen, Copy, Check } from "lucide-react";
 import Link from "next/link";
-import { APIPlayground } from "@/components/playground/APIPlayground";
-import { SwaggerDocs } from "@/components/marketplace/swagger-docs";
 import { CodeExamplesTabs } from "@/components/marketplace/code-examples-tabs";
 import { ReviewForm } from "@/components/marketplace/review-form";
+
+const SwaggerDocs = dynamic(
+  () =>
+    import("@/components/marketplace/swagger-docs").then((m) => m.SwaggerDocs),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="py-8 text-center text-ink-muted">Loading documentation…</p>
+    ),
+  }
+);
+
+const APIPlayground = dynamic(
+  () =>
+    import("@/components/playground/APIPlayground").then((m) => m.APIPlayground),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="py-8 text-center text-ink-muted">Loading playground…</p>
+    ),
+  }
+);
 
 export default function APIDetailPage() {
   const params = useParams();
@@ -27,16 +48,13 @@ export default function APIDetailPage() {
 
   const fetchAPI = async () => {
     try {
-      const res = await fetch("/api/apis?limit=200&sort=score");
-      const apis = await res.json();
-      if (Array.isArray(apis)) {
-        const found = apis.find((a: any) => a.slug === params.slug);
-        if (found) {
-          const detailRes = await fetch(`/api/apis/${found.id}?hydrate=1`);
-          if (detailRes.ok) {
-            setApi(await detailRes.json());
-          }
-        }
+      const slug = String(params.slug || "");
+      if (!slug) return;
+      const detailRes = await fetch(
+        `/api/apis/${encodeURIComponent(slug)}?hydrate=1`
+      );
+      if (detailRes.ok) {
+        setApi(await detailRes.json());
       }
     } catch (error) {
       console.error("Error fetching API:", error);

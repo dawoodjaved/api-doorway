@@ -105,11 +105,21 @@ export async function hydrateApiOpenApi(
 ): Promise<{ hydrated: boolean; endpointCount: number; reason?: string }> {
   const api = await prisma.aPI.findUnique({
     where: { id: apiId },
-    include: {
+    select: {
+      id: true,
+      openapiUrl: true,
+      endpointCount: true,
+      tryReady: true,
+      baseUrl: true,
+      https: true,
+      arenaScore: true,
       versions: {
         orderBy: { createdAt: "desc" },
         take: 1,
-        include: { endpoints: true },
+        select: {
+          id: true,
+          endpoints: { select: { path: true }, take: 5 },
+        },
       },
     },
   });
@@ -133,33 +143,35 @@ export async function hydrateApiOpenApi(
   const tryReady = endpointCount >= 2 && api.https !== false;
   const arenaScore = Math.min(100, (api.arenaScore || 0) + (endpointCount >= 2 ? 8 : 0));
 
-  let version = latest;
-  if (!version) {
-    version = await prisma.aPIVersion.create({
+  let versionId = latest?.id;
+  if (!versionId) {
+    const created = await prisma.aPIVersion.create({
       data: {
         apiId: api.id,
         version: "1.0.0",
         openApiSpec: spec,
         changelog: `Hydrated OpenAPI from ${api.openapiUrl}`,
       },
-      include: { endpoints: true },
+      select: { id: true },
     });
+    versionId = created.id;
   } else {
-    await prisma.endpoint.deleteMany({ where: { versionId: version.id } });
-    version = await prisma.aPIVersion.update({
-      where: { id: version.id },
-      data: {
-        openApiSpec: spec,
-        changelog: `Hydrated OpenAPI from ${api.openapiUrl}`,
-      },
-      include: { endpoints: true },
-    });
+    await prisma.$transaction([
+      prisma.endpoint.deleteMany({ where: { versionId } }),
+      prisma.aPIVersion.update({
+        where: { id: versionId },
+        data: {
+          openApiSpec: spec,
+          changelog: `Hydrated OpenAPI from ${api.openapiUrl}`,
+        },
+      }),
+    ]);
   }
 
   if (endpoints.length) {
     await prisma.endpoint.createMany({
       data: endpoints.map((e) => ({
-        versionId: version!.id,
+        versionId: versionId!,
         method: e.method,
         path: e.path,
         description: e.description,

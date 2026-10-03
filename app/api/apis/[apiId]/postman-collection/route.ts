@@ -11,14 +11,17 @@ export async function GET(
     const version = searchParams.get("version");
     const baseUrl = searchParams.get("baseUrl");
 
-    // Get API and version
     const api = await prisma.aPI.findUnique({
       where: { id: params.apiId },
-      include: {
+      select: {
+        name: true,
         versions: {
           where: version ? { version } : undefined,
           orderBy: { createdAt: "desc" },
           take: 1,
+          select: {
+            openApiSpec: true,
+          },
         },
       },
     });
@@ -34,10 +37,8 @@ export async function GET(
       );
     }
 
-    const apiVersion = api.versions[0];
-    const openApiSpec = apiVersion.openApiSpec as any;
+    const openApiSpec = api.versions[0].openApiSpec as any;
 
-    // Convert to Postman collection
     const collection = convertToPostmanCollection(
       openApiSpec,
       api.name,

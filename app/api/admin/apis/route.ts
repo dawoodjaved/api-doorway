@@ -12,14 +12,30 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
+      select: { id: true, role: true },
     });
 
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const take = Math.min(
+      Number(request.nextUrl.searchParams.get("limit") || "200") || 200,
+      500
+    );
+
     const apis = await prisma.aPI.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        category: true,
+        isApproved: true,
+        isFeatured: true,
+        isPublic: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
           select: {
             id: true,
@@ -29,6 +45,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: "desc" },
+      take,
     });
 
     return NextResponse.json(apis);

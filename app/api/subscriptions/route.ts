@@ -13,7 +13,18 @@ export async function GET(request: NextRequest) {
 
     const subscriptions = await prisma.subscription.findMany({
       where: { userId: session.user.id },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        apiId: true,
+        plan: true,
+        status: true,
+        stripeCustomerId: true,
+        stripeSubscriptionId: true,
+        currentPeriodEnd: true,
+        trialEnd: true,
+        createdAt: true,
+        updatedAt: true,
         api: {
           select: {
             id: true,
@@ -25,6 +36,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
 
     return NextResponse.json(subscriptions);

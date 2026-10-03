@@ -21,23 +21,34 @@ export async function GET() {
   let userCount = 0;
   let apiCount = 0;
 
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    userCount = await prisma.user.count();
-    apiCount = await prisma.aPI.count();
-    checks.database = "connected";
-  } catch {
-    checks.database = "disconnected";
-  }
+  const dbCheck = (async () => {
+    try {
+      const [, users, apis] = await Promise.all([
+        prisma.$queryRaw`SELECT 1`,
+        prisma.user.count(),
+        prisma.aPI.count(),
+      ]);
+      userCount = users;
+      apiCount = apis;
+      checks.database = "connected";
+    } catch {
+      checks.database = "disconnected";
+    }
+  })();
 
-  try {
-    await ensureRedis(true);
-    const client = getRedis();
-    await client.ping();
-    checks.redis = getRedisMode() === "redis" ? "connected" : "memory-fallback";
-  } catch {
-    checks.redis = "unavailable";
-  }
+  const redisCheck = (async () => {
+    try {
+      await ensureRedis(true);
+      const client = getRedis();
+      await client.ping();
+      checks.redis =
+        getRedisMode() === "redis" ? "connected" : "memory-fallback";
+    } catch {
+      checks.redis = "unavailable";
+    }
+  })();
+
+  await Promise.all([dbCheck, redisCheck]);
 
   const healthy = checks.database === "connected";
 

@@ -33,6 +33,13 @@ export const authOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            role: true,
+          },
         });
 
         if (!user) {
@@ -44,6 +51,7 @@ export const authOptions = {
             userId: user.id,
             provider: "credentials",
           },
+          select: { access_token: true },
         });
 
         if (!account?.access_token) {
@@ -112,6 +120,7 @@ export const authOptions = {
           try {
             const dbUser = await prisma.user.findUnique({
               where: { email: token.email as string },
+              select: { id: true, role: true },
             });
             if (dbUser) {
               token.id = dbUser.id;
@@ -141,11 +150,13 @@ export const authOptions = {
         session.user.id = userId || "";
         session.user.role = role;
 
+        // Trust JWT when already enriched — avoids a DB hit on every request
         const email = session.user.email;
-        if (email && typeof email === "string") {
+        if (email && typeof email === "string" && (!userId || !token.role)) {
           try {
             const dbUser = await prisma.user.findUnique({
               where: { email },
+              select: { id: true, role: true, name: true, image: true },
             });
             if (dbUser) {
               session.user.id = dbUser.id;

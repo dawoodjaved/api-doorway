@@ -17,12 +17,28 @@ export async function GET(
   { params }: { params: { apiId: string } }
 ) {
   try {
+    // List view: metadata + endpoints only (no openApiSpec JSON blobs)
     const versions = await prisma.aPIVersion.findMany({
       where: { apiId: params.apiId },
-      include: {
-        endpoints: true,
+      select: {
+        id: true,
+        apiId: true,
+        version: true,
+        isDeprecated: true,
+        deprecationDate: true,
+        changelog: true,
+        createdAt: true,
+        endpoints: {
+          select: {
+            id: true,
+            method: true,
+            path: true,
+            description: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
+      take: 50,
     });
 
     return NextResponse.json(versions);

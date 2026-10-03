@@ -17,45 +17,99 @@ const updateAPISchema = z.object({
   isPublic: z.boolean().optional(),
 });
 
+/** Detail payload without pulling every version's full OpenAPI JSON */
+const apiDetailSelect = {
+  id: true,
+  name: true,
+  slug: true,
+  description: true,
+  category: true,
+  logo: true,
+  baseUrl: true,
+  authType: true,
+  https: true,
+  cors: true,
+  docsUrl: true,
+  openapiUrl: true,
+  hasOpenApi: true,
+  tags: true,
+  arenaScore: true,
+  endpointCount: true,
+  tryReady: true,
+  lastSyncedAt: true,
+  isPublic: true,
+  isApproved: true,
+  isFeatured: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+  source: true,
+  sourceKey: true,
+  user: {
+    select: {
+      id: true,
+      name: true,
+      image: true,
+    },
+  },
+  versions: {
+    orderBy: { createdAt: "desc" as const },
+    select: {
+      id: true,
+      version: true,
+      isDeprecated: true,
+      deprecationDate: true,
+      changelog: true,
+      createdAt: true,
+      endpoints: {
+        select: {
+          id: true,
+          method: true,
+          path: true,
+          description: true,
+        },
+      },
+    },
+  },
+  reviews: {
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      createdAt: true,
+      updatedAt: true,
+      userId: true,
+      apiId: true,
+      user: {
+        select: {
+          name: true,
+          image: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" as const },
+    take: 50,
+  },
+  _count: {
+    select: {
+      subscriptions: true,
+      reviews: true,
+    },
+  },
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { apiId: string } }
 ) {
   try {
     const hydrateParam = request.nextUrl.searchParams.get("hydrate");
-    let api = await prisma.aPI.findUnique({
-      where: { id: params.apiId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-        versions: {
-          orderBy: { createdAt: "desc" },
-          include: {
-            endpoints: true,
-          },
-        },
-        reviews: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-        },
-        _count: {
-          select: {
-            subscriptions: true,
-          },
-        },
+    // Accept either cuid id or marketplace slug (avoids a full catalog scan client-side)
+    let api = await prisma.aPI.findFirst({
+      where: {
+        OR: [{ id: params.apiId }, { slug: params.apiId }],
       },
+      select: apiDetailSelect,
     });
 
     if (!api) {
@@ -74,23 +128,8 @@ export async function GET(
       try {
         await hydrateApiOpenApi(api.id);
         api = await prisma.aPI.findUnique({
-          where: { id: params.apiId },
-          include: {
-            user: {
-              select: { id: true, name: true, image: true },
-            },
-            versions: {
-              orderBy: { createdAt: "desc" },
-              include: { endpoints: true },
-            },
-            reviews: {
-              include: {
-                user: { select: { name: true, image: true } },
-              },
-              orderBy: { createdAt: "desc" },
-            },
-            _count: { select: { subscriptions: true } },
-          },
+          where: { id: api.id },
+          select: apiDetailSelect,
         });
       } catch (e) {
         console.warn("Lazy hydrate failed:", e);
@@ -101,17 +140,35 @@ export async function GET(
       return NextResponse.json({ error: "API not found" }, { status: 404 });
     }
 
-    const reviews = Array.isArray(api.reviews) ? api.reviews : [];
-    const ratings = reviews.map((r) => r.rating);
-    const avgRating =
-      ratings.length > 0
-        ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+    const latestVersionId = api.versions[0]?.id;
+    const keyIdsPromise = prisma.aPIKey.findMany({
+      where: { apiId: api.id },
+      select: { id: true },
+    });
+
+    const [ratingAgg, keyIds, latestSpec] = await Promise.all([
+      prisma.review.aggregate({
+        where: { apiId: api.id },
+        _avg: { rating: true },
+      }),
+      keyIdsPromise,
+      latestVersionId
+        ? prisma.aPIVersion.findUnique({
+            where: { id: latestVersionId },
+            select: { openApiSpec: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    const usageCalls =
+      keyIds.length > 0
+        ? await prisma.requestLog.count({
+            where: { apiKeyId: { in: keyIds.map((k) => k.id) } },
+          })
         : 0;
 
-    // Usage signal for reviews context (request logs for this API's keys)
-    const usageCalls = await prisma.requestLog.count({
-      where: { apiKey: { apiId: api.id } },
-    });
+    const reviews = Array.isArray(api.reviews) ? api.reviews : [];
+    const avgRating = ratingAgg._avg.rating || 0;
 
     // Keep source/sourceKey internal for sync — do not expose in the public payload
     const { source: _source, sourceKey: _sourceKey, ...publicApi } = api;
@@ -128,12 +185,16 @@ export async function GET(
       ...publicApi,
       tags: (api.tags || []).filter((t) => !t.startsWith("src:")),
       reviews,
-      versions: (Array.isArray(api.versions) ? api.versions : []).map((v) => ({
-        ...v,
-        changelog: sanitizeChangelog(v.changelog),
-      })),
+      versions: (Array.isArray(api.versions) ? api.versions : []).map(
+        (v, index) => ({
+          ...v,
+          // Only attach the heavy OpenAPI blob on the latest version (Swagger UI)
+          openApiSpec: index === 0 ? latestSpec?.openApiSpec ?? null : null,
+          changelog: sanitizeChangelog(v.changelog),
+        })
+      ),
       rating: avgRating,
-      reviewCount: reviews.length,
+      reviewCount: api._count.reviews,
       subscriberCount: api._count.subscriptions,
       usageCalls,
     });
