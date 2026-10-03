@@ -201,22 +201,22 @@ export default function APIDetailPage() {
           </div>
         )}
 
-        <div className="mb-6 rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-6 shadow-soft sm:p-8">
+        <div className="mb-6 rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-4 shadow-soft sm:p-8">
           <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row">
-            <div className="flex items-center gap-4">
+            <div className="flex w-full min-w-0 items-start gap-3 sm:items-center sm:gap-4">
               {api.logo ? (
                 <img
                   src={api.logo}
                   alt={`${api.name} logo`}
-                  className="h-16 w-16 rounded-lg object-cover bg-accent-soft"
+                  className="h-14 w-14 shrink-0 rounded-lg object-cover bg-accent-soft sm:h-16 sm:w-16"
                 />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent-soft font-display text-2xl font-bold text-accent">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-accent-soft font-display text-2xl font-bold text-accent sm:h-16 sm:w-16">
                   {api.name.charAt(0).toUpperCase()}
                 </div>
               )}
-              <div>
-                <h1 className="mb-2 font-display text-3xl font-bold text-ink">
+              <div className="min-w-0 flex-1">
+                <h1 className="mb-2 break-words font-display text-2xl font-bold text-ink sm:text-3xl">
                   {api.name}
                 </h1>
                 <div className="flex flex-wrap items-center gap-3">
@@ -253,14 +253,14 @@ export default function APIDetailPage() {
 
           <p className="mb-4 text-ink-soft">{api.description}</p>
 
-          <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
-            <code className="rounded-lg bg-canvas px-3 py-1.5 font-mono text-ink-soft">
+          <div className="mb-6 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center">
+            <code className="max-w-full break-all rounded-lg bg-canvas px-3 py-1.5 font-mono text-ink-soft">
               {gatewayBase}
             </code>
             <button
               type="button"
               onClick={copyBase}
-              className="inline-flex items-center gap-1 rounded-lg border border-[rgba(11,18,32,0.08)] px-3 py-1.5 text-ink-muted hover:text-ink"
+              className="inline-flex w-fit items-center gap-1 rounded-lg border border-[rgba(11,18,32,0.08)] px-3 py-1.5 text-ink-muted hover:text-ink"
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               Copy base URL

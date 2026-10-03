@@ -24,18 +24,19 @@ export function Navbar() {
       <div className="mx-auto flex h-[4.25rem] max-w-container items-center justify-between px-5">
         <Link
           href="/"
-          className="flex items-center gap-2.5 font-display text-xl font-bold tracking-tight"
+          className="flex min-w-0 items-center gap-2 font-display text-lg font-bold tracking-tight sm:gap-2.5 sm:text-xl"
           aria-label="APIDoorway home"
+          onClick={() => setMobileMenuOpen(false)}
         >
           <Image
             src="/favicon.png"
             alt=""
             width={36}
             height={36}
-            className="h-9 w-9 rounded-[0.55rem]"
+            className="h-8 w-8 shrink-0 rounded-[0.55rem] sm:h-9 sm:w-9"
             priority
           />
-          <span className="leading-none tracking-tight">
+          <span className="truncate leading-none tracking-tight">
             <span className="text-primary">API</span>
             <span className="text-ink">Doorway</span>
           </span>
@@ -124,6 +125,15 @@ export function Navbar() {
                 >
                   Publish
                 </Link>
+                {(session.user as any)?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="py-2 text-ink"
+                  >
+                    Admin
+                  </Link>
+                )}
               </>
             )}
             {session ? (

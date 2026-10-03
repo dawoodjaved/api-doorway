@@ -70,7 +70,7 @@ export default function CompareClient() {
         <Link href="/marketplace" className="text-sm text-accent">
           ← Marketplace
         </Link>
-        <h1 className="mt-4 mb-2 font-display text-4xl font-bold text-ink">
+        <h1 className="mt-4 mb-2 font-display text-3xl font-bold text-ink sm:text-4xl">
           Compare APIs
         </h1>
         <p className="mb-8 text-ink-muted">
@@ -81,31 +81,35 @@ export default function CompareClient() {
           <p className="text-ink-muted">Loading…</p>
         ) : (
           <>
-            <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {apis.map((api) => (
-                <label
-                  key={api.id}
-                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${
-                    selected.includes(api.id)
-                      ? "border-accent bg-accent-soft"
-                      : "border-[rgba(11,18,32,0.08)] bg-surface"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(api.id)}
-                    onChange={() => toggle(api.id)}
-                    className="mt-1"
-                  />
-                  <span>
-                    <span className="block font-medium text-ink">{api.name}</span>
-                    <span className="text-sm text-ink-muted">{api.category}</span>
-                  </span>
-                </label>
-              ))}
+            <div className="mb-8 max-h-[40vh] overflow-y-auto rounded-xl border border-[rgba(11,18,32,0.08)] bg-surface p-3 sm:max-h-none sm:overflow-visible sm:border-0 sm:bg-transparent sm:p-0">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {apis.map((api) => (
+                  <label
+                    key={api.id}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 sm:p-4 ${
+                      selected.includes(api.id)
+                        ? "border-accent bg-accent-soft"
+                        : "border-[rgba(11,18,32,0.08)] bg-surface"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(api.id)}
+                      onChange={() => toggle(api.id)}
+                      className="mt-1 shrink-0"
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-ink">
+                        {api.name}
+                      </span>
+                      <span className="text-sm text-ink-muted">{api.category}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
 
-            <div className="rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-6 shadow-soft">
+            <div className="rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-4 shadow-soft sm:p-6">
               <ApiComparison
                 apis={
                   compared.length

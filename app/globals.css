@@ -36,6 +36,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
@@ -52,6 +53,12 @@ body {
   background-size: auto, 48px 48px, 48px 48px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+img,
+video {
+  max-width: 100%;
 }
 
 h1,
@@ -294,8 +301,51 @@ button.btn-primary,
   color: rgba(255, 255, 255, 0.85) !important;
 }
 
+/* Swagger UI: keep docs usable on narrow screens */
+.swagger-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.swagger-wrapper .swagger-ui .wrapper {
+  padding: 0;
+}
+
+.swagger-wrapper .swagger-ui .information-container.wrapper {
+  padding: 0 0.5rem;
+}
+
+.swagger-wrapper .swagger-ui .scheme-container {
+  padding: 0.75rem;
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .swagger-wrapper .swagger-ui .opblock-summary-path,
+  .swagger-wrapper .swagger-ui .opblock-summary-description {
+    word-break: break-all;
+  }
+
+  .swagger-wrapper .swagger-ui table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
 @media (max-width: 768px) {
   .section {
     padding: 3.5rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 2.75rem 0;
+  }
+
+  .btn {
+    padding: 0.8rem 1.1rem;
+    font-size: 0.9rem;
   }
 }

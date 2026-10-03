@@ -115,13 +115,15 @@ export function APIPlayground({
   };
 
   return (
-    <div className="rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-6 shadow-soft">
+    <div className="rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-4 shadow-soft sm:p-6">
       <div className="mb-6">
-        <h2 className="mb-2 flex items-center gap-2 font-display text-2xl font-semibold text-ink">
-          <Code2 className="h-6 w-6 text-accent" />
+        <h2 className="mb-2 flex items-center gap-2 font-display text-xl font-semibold text-ink sm:text-2xl">
+          <Code2 className="h-5 w-5 shrink-0 text-accent sm:h-6 sm:w-6" />
           API Playground
         </h2>
-        <p className="text-ink-muted">Test your API endpoints interactively</p>
+        <p className="text-sm text-ink-muted sm:text-base">
+          Test your API endpoints interactively
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -264,14 +266,14 @@ export function APIPlayground({
                     onClick={() => setResponse(req)}
                     className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-3 py-2 text-left transition-all hover:border-accent/40"
                   >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-accent">{req.method}</span>
-                      <span className="text-ink-muted">{req.path}</span>
+                    <div className="flex min-w-0 items-center gap-2 text-xs">
+                      <span className="shrink-0 font-medium text-accent">{req.method}</span>
+                      <span className="min-w-0 flex-1 truncate text-ink-muted">{req.path}</span>
                       <span
                         className={
                           req.status >= 200 && req.status < 300
-                            ? "text-emerald-600"
-                            : "text-red-600"
+                            ? "shrink-0 text-emerald-600"
+                            : "shrink-0 text-red-600"
                         }
                       >
                         {req.status}

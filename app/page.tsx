@@ -34,28 +34,28 @@ export default async function Home() {
             <p className="mt-4 max-w-md text-base text-ink-muted sm:text-lg">
               Enriched marketplace with APIDoorway Score, OpenAPI docs, keys, playground, and real usage — one loop for providers and developers.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/marketplace" className="btn btn-primary">
+            <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:max-w-none sm:flex-row sm:flex-wrap">
+              <Link href="/marketplace" className="btn btn-primary w-full sm:w-auto">
                 Browse marketplace
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/auth/signup" className="btn btn-secondary">
+              <Link href="/auth/signup" className="btn btn-secondary w-full sm:w-auto">
                 Get started free
               </Link>
             </div>
             {stats?.total != null && (
-              <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-[rgba(11,18,32,0.08)] pt-6">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-ink-faint">APIs</dt>
-                  <dd className="mt-1 font-display text-2xl font-bold text-ink">{stats.total}</dd>
+              <dl className="mt-10 grid max-w-lg grid-cols-3 gap-3 border-t border-[rgba(11,18,32,0.08)] pt-6 sm:gap-4">
+                <div className="min-w-0">
+                  <dt className="text-[10px] uppercase tracking-wide text-ink-faint sm:text-xs">APIs</dt>
+                  <dd className="mt-1 font-display text-xl font-bold text-ink sm:text-2xl">{stats.total}</dd>
                 </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-ink-faint">Try-ready</dt>
-                  <dd className="mt-1 font-display text-2xl font-bold text-ink">{stats.tryReadyPct}%</dd>
+                <div className="min-w-0">
+                  <dt className="text-[10px] uppercase tracking-wide text-ink-faint sm:text-xs">Try-ready</dt>
+                  <dd className="mt-1 font-display text-xl font-bold text-ink sm:text-2xl">{stats.tryReadyPct}%</dd>
                 </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-ink-faint">Avg score</dt>
-                  <dd className="mt-1 font-display text-2xl font-bold text-ink">{stats.avgArenaScore}</dd>
+                <div className="min-w-0">
+                  <dt className="text-[10px] uppercase tracking-wide text-ink-faint sm:text-xs">Avg score</dt>
+                  <dd className="mt-1 font-display text-xl font-bold text-ink sm:text-2xl">{stats.avgArenaScore}</dd>
                 </div>
               </dl>
             )}

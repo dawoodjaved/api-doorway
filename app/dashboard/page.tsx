@@ -198,7 +198,7 @@ export default function DashboardPage() {
             <p className="text-sm font-medium uppercase tracking-wide text-accent">
               Developer portal
             </p>
-            <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
+            <h1 className="mt-2 break-words font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
               {session.user?.name || "Welcome back"}
             </h1>
             <p className="mt-3 text-ink-muted">{session.user?.email}</p>
@@ -313,7 +313,10 @@ export default function DashboardPage() {
                   Prefer try-ready APIs with real OpenAPI paths.
                 </p>
               </div>
-              <Link href="/marketplace" className="text-sm font-medium text-accent hover:underline">
+              <Link
+                href="/marketplace"
+                className="shrink-0 text-sm font-medium text-accent hover:underline"
+              >
                 See all
               </Link>
             </div>

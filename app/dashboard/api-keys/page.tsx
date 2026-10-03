@@ -96,14 +96,14 @@ export default function APIKeysPage() {
   return (
     <div className="min-h-screen bg-[#0A0E1A]">
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">API Keys</h1>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">API Keys</h1>
             <p className="text-gray-400">Create keys per API and environment</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4F7FFF] text-white"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#4F7FFF] px-4 py-2 text-white sm:w-auto"
           >
             <Plus className="w-4 h-4" /> Create
           </button>

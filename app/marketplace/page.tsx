@@ -109,7 +109,7 @@ export default function MarketplacePage() {
       <div className="mx-auto max-w-container px-5 py-12 sm:py-16">
         <div className="flex flex-col gap-6 border-b border-[rgba(11,18,32,0.08)] pb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
+            <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
               Marketplace
             </h1>
             <p className="mt-3 max-w-xl text-ink-muted">
@@ -131,20 +131,20 @@ export default function MarketplacePage() {
         </div>
 
         {stats && (
-          <div className="mt-6 grid gap-3 rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-4 sm:grid-cols-4">
-            <div>
+          <div className="mt-6 grid grid-cols-2 gap-3 rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-4 lg:grid-cols-4">
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-wide text-ink-faint">Catalog</p>
               <p className="font-display text-2xl font-bold text-ink">{stats.total}</p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-wide text-ink-faint">OpenAPI linked</p>
               <p className="font-display text-2xl font-bold text-ink">{stats.openApiPct}%</p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-wide text-ink-faint">Try-ready</p>
               <p className="font-display text-2xl font-bold text-ink">{stats.tryReadyPct}%</p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-wide text-ink-faint">Avg APIDoorway Score</p>
               <p className="font-display text-2xl font-bold text-ink">{stats.avgArenaScore}</p>
               {lastSync && (
@@ -220,7 +220,7 @@ export default function MarketplacePage() {
           <select
             value={authFilter}
             onChange={(e) => setAuthFilter(e.target.value)}
-            className="rounded-[8px] border border-[rgba(11,18,32,0.08)] bg-surface px-3 py-1.5 text-ink-muted outline-none"
+            className="min-w-0 max-w-full rounded-[8px] border border-[rgba(11,18,32,0.08)] bg-surface px-3 py-1.5 text-ink-muted outline-none"
           >
             <option value="all">Any auth</option>
             <option value="none">No auth</option>
@@ -231,7 +231,7 @@ export default function MarketplacePage() {
           <select
             value={minScore}
             onChange={(e) => setMinScore(Number(e.target.value))}
-            className="rounded-[8px] border border-[rgba(11,18,32,0.08)] bg-surface px-3 py-1.5 text-ink-muted outline-none"
+            className="min-w-0 max-w-full rounded-[8px] border border-[rgba(11,18,32,0.08)] bg-surface px-3 py-1.5 text-ink-muted outline-none"
           >
             <option value={0}>Any APIDoorway Score</option>
             <option value={50}>Score ≥ 50</option>

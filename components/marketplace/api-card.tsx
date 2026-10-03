@@ -47,7 +47,7 @@ export function APICard({ api }: APICardProps) {
       href={`/marketplace/api/${api.slug}`}
       className="group block border-b border-[rgba(11,18,32,0.08)] py-6 transition-colors hover:bg-accent-soft/40 sm:px-3"
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         {showLogo ? (
           <img
             src={api.logo!}
@@ -56,18 +56,18 @@ export function APICard({ api }: APICardProps) {
             height={44}
             loading="lazy"
             decoding="async"
-            className="h-11 w-11 rounded-md object-cover bg-accent-soft"
+            className="h-10 w-10 shrink-0 rounded-md object-cover bg-accent-soft sm:h-11 sm:w-11"
             onError={() => setImgFailed(true)}
           />
         ) : (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accent-soft font-display text-lg font-bold text-accent">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-soft font-display text-lg font-bold text-accent sm:h-11 sm:w-11">
             {api.name.charAt(0).toUpperCase()}
           </div>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="font-display text-lg font-semibold text-ink group-hover:text-accent">
+            <div className="min-w-0">
+              <h3 className="truncate font-display text-base font-semibold text-ink group-hover:text-accent sm:text-lg">
                 {api.name}
               </h3>
               <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-ink-faint">
