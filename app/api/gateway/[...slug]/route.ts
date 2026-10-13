@@ -10,6 +10,7 @@ import {
 import { handleCors } from "@/lib/gateway/cors";
 import { getKongGateway } from "@/lib/gateway/kong";
 import { prisma } from "@/lib/prisma";
+import { isSafeOutboundUrl } from "@/lib/security/url-safety";
 
 export async function GET(
   request: NextRequest,
@@ -284,18 +285,35 @@ async function handleGatewayRequest(
         responseData = { raw: responseText };
       }
     } else if (upstream) {
-      const targetUrl = `${upstream}${path}${query}`;
-      const forwardResponse = await fetch(targetUrl, {
-        method,
-        headers: forwardHeaders,
-        body: requestBodyText,
-      });
-      statusCode = forwardResponse.status;
-      responseText = await forwardResponse.text();
-      try {
-        responseData = JSON.parse(responseText);
-      } catch {
-        responseData = { raw: responseText };
+      if (!isSafeOutboundUrl(upstream)) {
+        statusCode = 502;
+        responseData = {
+          error: "Upstream URL is not allowed",
+          detail: "baseUrl must be a public http(s) host",
+        };
+      } else {
+        const targetUrl = `${upstream.replace(/\/$/, "")}${path}${query}`;
+        const forwardResponse = await fetch(targetUrl, {
+          method,
+          headers: forwardHeaders,
+          body: requestBodyText,
+          redirect: "manual",
+        });
+        if (forwardResponse.status >= 300 && forwardResponse.status < 400) {
+          statusCode = 502;
+          responseData = {
+            error: "Upstream redirect blocked",
+            detail: "Redirects are not followed for security",
+          };
+        } else {
+          statusCode = forwardResponse.status;
+          responseText = await forwardResponse.text();
+          try {
+            responseData = JSON.parse(responseText);
+          } catch {
+            responseData = { raw: responseText };
+          }
+        }
       }
     } else {
       statusCode = 200;

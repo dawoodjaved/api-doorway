@@ -7,6 +7,7 @@ import {
   hydrateApiOpenApi,
   isStubOnly,
 } from "@/lib/services/openapi-hydrate";
+import { canViewApi } from "@/lib/security/api-access";
 
 const updateAPISchema = z.object({
   name: z.string().min(1).optional(),
@@ -113,6 +114,11 @@ export async function GET(
     });
 
     if (!api) {
+      return NextResponse.json({ error: "API not found" }, { status: 404 });
+    }
+
+    // IDOR: hide private / unapproved listings from strangers
+    if (!(await canViewApi(api))) {
       return NextResponse.json({ error: "API not found" }, { status: 404 });
     }
 

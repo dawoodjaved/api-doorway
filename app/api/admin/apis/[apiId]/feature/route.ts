@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/get-session";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/security/require-admin";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { apiId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || (session.user as any).role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const admin = await requireAdmin();
+    if (!admin.ok) return admin.response;
 
     const body = await request.json().catch(() => ({}));
 

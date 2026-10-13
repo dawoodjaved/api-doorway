@@ -48,8 +48,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-**Seed logins**
+**Seed logins** (local/dev only — never use these in a shared or production database)
+
+| Role | Email | Password |
+|------|-------|----------|
 | Developer | `dev@apidoorway.local` | `user1234` |
+
+Production seed is blocked unless `ALLOW_DEMO_SEED=true`.
+
+## Security notes
+
+- Keep `.env` / `.env.local` out of git. If any secret was previously hardcoded or shared, **rotate it immediately** (`NEXTAUTH_SECRET` / `AUTH_SECRET`, database password, OAuth secrets, Stripe keys, Redis, `CRON_SECRET`).
+- Set `CRON_SECRET` before enabling cron. Admin catalog sync requires an admin session.
 
 ## Commit and push
 

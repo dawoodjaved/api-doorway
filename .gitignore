@@ -66,3 +66,4 @@ scripts/catalog/**/__pycache__/
 .venv/
 venv/
 .env*
+!.env.example

@@ -88,7 +88,8 @@ export const authOptions = {
           GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-            allowDangerousEmailAccountLinking: true,
+            // Prevent takeover via pre-registering a victim email then linking OAuth
+            allowDangerousEmailAccountLinking: false,
           }),
         ]
       : []),
@@ -100,7 +101,7 @@ export const authOptions = {
           GitHubProvider({
             clientId: process.env.GITHUB_CLIENT_ID!,
             clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-            allowDangerousEmailAccountLinking: true,
+            allowDangerousEmailAccountLinking: false,
           }),
         ]
       : []),
@@ -115,8 +116,33 @@ export const authOptions = {
           const maxAge =
             user.rememberMe === false ? 12 * 60 * 60 : 30 * 24 * 60 * 60;
           token.exp = Math.floor(Date.now() / 1000) + maxAge;
+          token.roleCheckedAt = Date.now();
         }
-        if (token.email && !token.role) {
+
+        // Refresh role so demoted admins lose access without waiting for JWT expiry
+        const shouldRefreshRole =
+          Boolean(token.id) &&
+          (!token.role ||
+            !token.roleCheckedAt ||
+            Date.now() - Number(token.roleCheckedAt) > 5 * 60 * 1000);
+
+        if (shouldRefreshRole && token.id) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { id: token.id as string },
+              select: { id: true, role: true },
+            });
+            if (dbUser) {
+              token.id = dbUser.id;
+              token.role = dbUser.role;
+              token.roleCheckedAt = Date.now();
+            }
+          } catch (e) {
+            if (process.env.NODE_ENV === "development") {
+              console.error("JWT callback DB error:", e);
+            }
+          }
+        } else if (token.email && !token.role) {
           try {
             const dbUser = await prisma.user.findUnique({
               where: { email: token.email as string },
@@ -125,6 +151,7 @@ export const authOptions = {
             if (dbUser) {
               token.id = dbUser.id;
               token.role = dbUser.role;
+              token.roleCheckedAt = Date.now();
             }
           } catch (e) {
             if (process.env.NODE_ENV === "development") {
@@ -204,10 +231,22 @@ export const authOptions = {
     strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60,
   },
-  secret:
-    process.env.AUTH_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "fallback-secret-change-in-production",
+  secret: (() => {
+    const secret =
+      process.env.AUTH_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+    if (!secret || secret.length < 16) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "AUTH_SECRET or NEXTAUTH_SECRET must be set to a strong value in production"
+        );
+      }
+      console.warn(
+        "[auth] AUTH_SECRET/NEXTAUTH_SECRET missing — set a strong secret before deploying"
+      );
+      return `dev-only-${process.env.USER || "local"}-not-for-production`;
+    }
+    return secret;
+  })(),
   debug: process.env.NODE_ENV === "development",
   trustHost: true,
 };

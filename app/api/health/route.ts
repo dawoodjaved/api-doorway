@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureRedis, getRedis, getRedisMode } from "@/lib/redis";
 import { isStripeConfigured } from "@/lib/stripe";
+import { requireAdmin } from "@/lib/security/require-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -12,24 +13,23 @@ function oauthConfigured(id?: string, secret?: string) {
   return !bad(id) && !bad(secret);
 }
 
-export async function GET() {
+async function isDetailedAllowed(request: NextRequest): Promise<boolean> {
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  const authHeader = request.headers.get("authorization");
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
+  const admin = await requireAdmin();
+  return admin.ok;
+}
+
+export async function GET(request: NextRequest) {
   const checks: Record<string, string> = {
     database: "unknown",
     redis: "unknown",
   };
 
-  let userCount = 0;
-  let apiCount = 0;
-
   const dbCheck = (async () => {
     try {
-      const [, users, apis] = await Promise.all([
-        prisma.$queryRaw`SELECT 1`,
-        prisma.user.count(),
-        prisma.aPI.count(),
-      ]);
-      userCount = users;
-      apiCount = apis;
+      await prisma.$queryRaw`SELECT 1`;
       checks.database = "connected";
     } catch {
       checks.database = "disconnected";
@@ -51,6 +51,30 @@ export async function GET() {
   await Promise.all([dbCheck, redisCheck]);
 
   const healthy = checks.database === "connected";
+
+  // Public: status only — no counts / config (internal exposure)
+  if (!(await isDetailedAllowed(request))) {
+    return NextResponse.json(
+      {
+        status: healthy ? "healthy" : "unhealthy",
+        timestamp: new Date().toISOString(),
+      },
+      { status: healthy ? 200 : 503 }
+    );
+  }
+
+  let userCount = 0;
+  let apiCount = 0;
+  try {
+    const [users, apis] = await Promise.all([
+      prisma.user.count(),
+      prisma.aPI.count(),
+    ]);
+    userCount = users;
+    apiCount = apis;
+  } catch {
+    /* keep zeros */
+  }
 
   return NextResponse.json(
     {

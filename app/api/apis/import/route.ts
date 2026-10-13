@@ -96,11 +96,20 @@ export async function POST(request: NextRequest) {
           isApproved: false,
         },
       });
-    } else if (resolvedBaseUrl && !api.baseUrl) {
-      api = await prisma.aPI.update({
-        where: { id: api.id },
-        data: { baseUrl: resolvedBaseUrl },
-      });
+    } else {
+      // IDOR: never add versions / update baseUrl on someone else's API
+      if (api.userId !== session.user.id) {
+        return NextResponse.json(
+          { error: "An API with this name already exists and you do not own it" },
+          { status: 403 }
+        );
+      }
+      if (resolvedBaseUrl && !api.baseUrl) {
+        api = await prisma.aPI.update({
+          where: { id: api.id },
+          data: { baseUrl: resolvedBaseUrl },
+        });
+      }
     }
 
     const existingVersion = await prisma.aPIVersion.findFirst({

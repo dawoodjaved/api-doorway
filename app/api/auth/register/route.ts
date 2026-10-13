@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import {
+  checkAuthRateLimit,
+  clientIp,
+} from "@/lib/security/rate-limit";
 
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -9,7 +13,6 @@ const registerSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-// Check database connection
 async function checkDatabaseConnection(): Promise<boolean> {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -22,7 +25,16 @@ async function checkDatabaseConnection(): Promise<boolean> {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check database connection first
+    // Feature abuse: throttle mass account creation
+    const ip = clientIp(request);
+    const limit = await checkAuthRateLimit(`register:ip:${ip}`, 5, 60 * 60);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many signup attempts. Try again later." },
+        { status: 429 }
+      );
+    }
+
     const dbConnected = await checkDatabaseConnection();
     if (!dbConnected) {
       return NextResponse.json(

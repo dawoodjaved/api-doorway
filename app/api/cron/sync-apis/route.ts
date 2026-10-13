@@ -2,32 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { importPublicAPIs } from "@/lib/services/catalog-import";
 
 /**
- * Cron job endpoint to sync public APIs
- * Can be called by Vercel Cron, GitHub Actions, or any cron service
- * 
- * To use with Vercel Cron, add to vercel.json:
- * {
- *   "crons": [{
- *     "path": "/api/cron/sync-apis",
- *     "schedule": "0 2 * * *"
- *   }]
- * }
+ * Cron sync — always requires Authorization: Bearer $CRON_SECRET (fail closed).
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret (optional but recommended)
     const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
+    const cronSecret = process.env.CRON_SECRET?.trim();
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const limit = 100; // Sync up to 100 APIs per run
-    const result = await importPublicAPIs(undefined, limit);
+    const result = await importPublicAPIs(undefined, 100);
 
     return NextResponse.json({
       message: "Public APIs synced successfully",
@@ -37,10 +23,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error in cron sync:", error);
     return NextResponse.json(
-      {
-        error: "Failed to sync public APIs",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Failed to sync public APIs" },
       { status: 500 }
     );
   }

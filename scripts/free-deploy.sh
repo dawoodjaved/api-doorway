@@ -45,12 +45,18 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 echo "DATABASE_URL acquired"
 
-echo "==> Prisma generate / push / seed / approve"
+echo "==> Prisma generate / push"
 export DATABASE_URL
 npx prisma generate
 npx prisma db push
-npm run db:seed
-npm run db:approve
+
+if [ "${ALLOW_DEMO_SEED:-}" = "true" ]; then
+  echo "==> Seeding demo users (ALLOW_DEMO_SEED=true) — change passwords immediately"
+  ALLOW_DEMO_SEED=true NODE_ENV=production npm run db:seed
+  npm run db:approve
+else
+  echo "==> Skipping demo seed (set ALLOW_DEMO_SEED=true only for disposable demos)"
+fi
 
 REDIS_URL="${REDIS_URL:-}"
 if [ -z "$REDIS_URL" ]; then
@@ -83,4 +89,6 @@ fi
 echo "==> Done"
 echo "Open: $URL"
 echo "Health: $URL/api/health"
-echo "Seed logins: admin@apidoorway.local / admin123  and  dev@apidoorway.local / user1234"
+if [ "${ALLOW_DEMO_SEED:-}" = "true" ]; then
+  echo "WARNING: Demo seed was enabled — rotate demo passwords immediately."
+fi

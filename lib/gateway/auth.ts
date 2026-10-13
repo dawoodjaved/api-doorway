@@ -13,8 +13,8 @@ export async function validateApiKey(
 }> {
   const hashed = hashApiKey(apiKey);
 
-  // Prefer unique hashed lookup; fall back to legacy plaintext keys
-  let key = await prisma.aPIKey.findUnique({
+  // Hashed lookup only — plaintext key storage is no longer accepted
+  const key = await prisma.aPIKey.findUnique({
     where: { key: hashed },
     select: {
       id: true,
@@ -25,20 +25,6 @@ export async function validateApiKey(
       expiresAt: true,
     },
   });
-
-  if (!key) {
-    key = await prisma.aPIKey.findUnique({
-      where: { key: apiKey },
-      select: {
-        id: true,
-        userId: true,
-        apiId: true,
-        scopes: true,
-        isActive: true,
-        expiresAt: true,
-      },
-    });
-  }
 
   if (!key || !key.isActive) {
     return { valid: false };

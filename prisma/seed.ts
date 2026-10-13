@@ -535,6 +535,16 @@ async function syncVersionAndEndpoints(
 }
 
 async function main() {
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.ALLOW_DEMO_SEED !== "true"
+  ) {
+    console.error(
+      "Refusing to seed demo users in production. Set ALLOW_DEMO_SEED=true only for disposable demo environments."
+    );
+    process.exit(1);
+  }
+
   const admin = await upsertUser({
     email: "admin@apidoorway.local",
     name: "Alex Rivera",
@@ -642,11 +652,13 @@ async function main() {
 
   console.log("Seed complete.");
   console.log(counts);
-  console.log("Logins:");
-  console.log("  admin@apidoorway.local / admin123");
-  console.log("  provider@apidoorway.local / provider123");
-  console.log("  catalog@apidoorway.local / catalog123");
-  console.log("  dev@apidoorway.local / user1234");
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Demo logins (local/dev only — rotate if this DB is shared):");
+    console.log("  admin@apidoorway.local / admin123");
+    console.log("  provider@apidoorway.local / provider123");
+    console.log("  catalog@apidoorway.local / catalog123");
+    console.log("  dev@apidoorway.local / user1234");
+  }
   console.log("Admin id:", admin.id);
 }
 

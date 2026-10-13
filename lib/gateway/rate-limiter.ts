@@ -30,8 +30,11 @@ export async function checkRateLimit(
       resetAt,
     };
   } catch (error) {
-    console.warn("[rate-limit] fallback allow (store error)", error);
-    return { allowed: true, remaining: limit, resetAt };
+    console.warn("[rate-limit] store error — failing closed for free/pro", error);
+    if (plan === "enterprise") {
+      return { allowed: true, remaining: Infinity, resetAt };
+    }
+    return { allowed: false, remaining: 0, resetAt };
   }
 }
 

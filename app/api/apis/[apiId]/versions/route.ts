@@ -3,6 +3,7 @@ import { getServerSession } from "@/lib/get-session";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { requireApiViewAccess } from "@/lib/security/api-access";
 
 const createVersionSchema = z.object({
   version: z.string().min(1),
@@ -17,9 +18,17 @@ export async function GET(
   { params }: { params: { apiId: string } }
 ) {
   try {
+    const access = await requireApiViewAccess(params.apiId);
+    if (!access.ok) {
+      return NextResponse.json(
+        { error: access.status === 404 ? "API not found" : "Forbidden" },
+        { status: access.status }
+      );
+    }
+
     // List view: metadata + endpoints only (no openApiSpec JSON blobs)
     const versions = await prisma.aPIVersion.findMany({
-      where: { apiId: params.apiId },
+      where: { apiId: access.api.id },
       select: {
         id: true,
         apiId: true,

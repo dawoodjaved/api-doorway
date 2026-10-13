@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { convertToPostmanCollection } from "@/lib/services/postman-collection";
+import { requireApiViewAccess } from "@/lib/security/api-access";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { apiId: string } }
 ) {
   try {
+    const access = await requireApiViewAccess(params.apiId);
+    if (!access.ok) {
+      return NextResponse.json(
+        { error: access.status === 404 ? "API not found" : "Forbidden" },
+        { status: access.status }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const version = searchParams.get("version");
     const baseUrl = searchParams.get("baseUrl");
 
     const api = await prisma.aPI.findUnique({
-      where: { id: params.apiId },
+      where: { id: access.api.id },
       select: {
         name: true,
         versions: {

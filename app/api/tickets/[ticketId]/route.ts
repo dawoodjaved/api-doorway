@@ -71,21 +71,29 @@ export async function PATCH(
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    // Users can only update their own tickets, admins can update any
-    if (ticket.userId !== session.user.id && session.user.role !== "admin") {
+    const isAdmin = session.user.role === "admin";
+    if (ticket.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
     const validated = updateTicketSchema.parse(body);
 
+    // Privilege escalation: users must not close/resolve their own tickets as staff
+    if (!isAdmin && (validated.status || validated.priority)) {
+      return NextResponse.json(
+        { error: "Only support staff can change ticket status or priority" },
+        { status: 403 }
+      );
+    }
+
     const updated = await prisma.ticket.update({
       where: { id: params.ticketId },
       data: {
         ...(validated.subject && { subject: validated.subject }),
         ...(validated.description && { description: validated.description }),
-        ...(validated.status && { status: validated.status }),
-        ...(validated.priority && { priority: validated.priority }),
+        ...(isAdmin && validated.status ? { status: validated.status } : {}),
+        ...(isAdmin && validated.priority ? { priority: validated.priority } : {}),
       },
     });
 
