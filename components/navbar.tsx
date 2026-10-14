@@ -73,7 +73,12 @@ export function Navbar() {
                 My portal
               </Link>
               <button
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={() => {
+                  // Avoid NextAuth redirecting to a stale NEXTAUTH_URL (e.g. old Vercel project).
+                  void signOut({ redirect: false }).then(() => {
+                    window.location.assign("/");
+                  });
+                }}
                 className="btn btn-ghost"
               >
                 Sign out
@@ -139,8 +144,10 @@ export function Navbar() {
             {session ? (
               <button
                 onClick={() => {
-                  signOut({ callbackUrl: "/" });
                   setMobileMenuOpen(false);
+                  void signOut({ redirect: false }).then(() => {
+                    window.location.assign("/");
+                  });
                 }}
                 className="btn btn-secondary mt-2 w-full"
               >

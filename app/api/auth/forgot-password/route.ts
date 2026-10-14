@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getRedis } from "@/lib/redis";
+import { getRequestAppUrl } from "@/lib/app-url";
 import { randomBytes, createHash } from "crypto";
 import { z } from "zod";
 
@@ -46,11 +47,7 @@ export async function POST(request: NextRequest) {
       JSON.stringify({ userId: user.id, email: normalized })
     );
 
-    const base =
-      process.env.NEXTAUTH_URL ||
-      request.nextUrl.origin ||
-      "http://localhost:3000";
-    const resetUrl = `${base}/auth/reset-password?token=${token}`;
+    const resetUrl = `${getRequestAppUrl(request)}/auth/reset-password?token=${token}`;
 
     // No email provider in MVP — surface the link in development / local.
     const exposeLink =

@@ -83,6 +83,11 @@ export async function GET(request: NextRequest) {
       counts: { users: userCount, apis: apiCount },
       config: {
         authUrl: process.env.NEXTAUTH_URL || null,
+        appUrl:
+          process.env.NEXT_PUBLIC_APP_URL ||
+          process.env.AUTH_URL ||
+          process.env.NEXTAUTH_URL ||
+          null,
         stripeConfigured: isStripeConfigured(),
         oauthGoogle: oauthConfigured(
           process.env.GOOGLE_CLIENT_ID,

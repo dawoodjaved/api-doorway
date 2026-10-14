@@ -21,13 +21,19 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.AUTH_URL ||
+      process.env.NEXTAUTH_URL ||
+      "http://localhost:3000"
+  ),
   title: "APIDoorway — Discover & ship APIs faster",
   description:
     "Publish OpenAPI specs, discover APIs, create keys, and monitor usage in one place.",
   icons: {
     icon: [
-      { url: "/favicon.png", type: "image/png" },
-      { url: "/logo.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.png", type: "image/png", sizes: "any" },
+      { url: "/logo.png", type: "image/png", sizes: "1024x1024" },
     ],
     apple: [{ url: "/favicon.png", type: "image/png" }],
   },

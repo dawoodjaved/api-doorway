@@ -1,21 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-
-async function getCatalogStats() {
-  try {
-    const base = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const res = await fetch(`${base}/api/catalog/stats`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
+import { getCatalogStats } from "@/lib/catalog-stats";
 
 export default async function Home() {
-  const stats = await getCatalogStats();
+  // Query DB directly — avoid self-HTTP via stale NEXTAUTH_URL (e.g. old Vercel host).
+  const stats = await getCatalogStats().catch(() => null);
 
   return (
     <div className="page-shell">

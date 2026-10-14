@@ -3,6 +3,7 @@ import { getServerSession } from "@/lib/get-session";
 import { authOptions } from "@/lib/auth";
 import { stripe, PLANS, isStripeConfigured } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { getRequestAppUrl } from "@/lib/app-url";
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,8 +77,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXTAUTH_URL}/dashboard/billing?success=true`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/dashboard/billing?canceled=true`,
+      success_url: `${getRequestAppUrl(request)}/dashboard/billing?success=true`,
+      cancel_url: `${getRequestAppUrl(request)}/dashboard/billing?canceled=true`,
       metadata: {
         userId: session.user.id,
         plan,
