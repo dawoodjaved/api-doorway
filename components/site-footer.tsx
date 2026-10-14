@@ -16,7 +16,7 @@ export function SiteFooter() {
               alt=""
               width={32}
               height={32}
-              className="h-8 w-8 rounded-[0.5rem]"
+              className="h-8 w-8 rounded-[0.5rem] border border-[rgba(11,18,32,0.08)] bg-surface"
             />
             <span>
               <span className="text-primary">API</span>

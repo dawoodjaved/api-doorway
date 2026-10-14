@@ -33,7 +33,7 @@ export function Navbar() {
             alt=""
             width={36}
             height={36}
-            className="h-8 w-8 shrink-0 rounded-[0.55rem] sm:h-9 sm:w-9"
+            className="h-8 w-8 shrink-0 rounded-[0.55rem] border border-[rgba(11,18,32,0.08)] bg-surface sm:h-9 sm:w-9"
             priority
           />
           <span className="truncate leading-none tracking-tight">
