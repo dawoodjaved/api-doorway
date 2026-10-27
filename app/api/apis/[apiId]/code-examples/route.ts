@@ -5,10 +5,12 @@ import { requireApiViewAccess } from "@/lib/security/api-access";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
-    const access = await requireApiViewAccess(params.apiId);
+    const access = await requireApiViewAccess(apiId);
     if (!access.ok) {
       return NextResponse.json(
         { error: access.status === 404 ? "API not found" : "Forbidden" },

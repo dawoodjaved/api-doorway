@@ -14,37 +14,47 @@ import { isSafeOutboundUrl } from "@/lib/security/url-safety";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string[] } }
+  { params }: { params: Promise<{ slug: string[] }> }
 ) {
-  return handleGatewayRequest(request, "GET", params.slug);
+  const { slug } = await params;
+
+  return handleGatewayRequest(request, "GET", slug);
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string[] } }
+  { params }: { params: Promise<{ slug: string[] }> }
 ) {
-  return handleGatewayRequest(request, "POST", params.slug);
+  const { slug } = await params;
+
+  return handleGatewayRequest(request, "POST", slug);
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string[] } }
+  { params }: { params: Promise<{ slug: string[] }> }
 ) {
-  return handleGatewayRequest(request, "PUT", params.slug);
+  const { slug } = await params;
+
+  return handleGatewayRequest(request, "PUT", slug);
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string[] } }
+  { params }: { params: Promise<{ slug: string[] }> }
 ) {
-  return handleGatewayRequest(request, "DELETE", params.slug);
+  const { slug } = await params;
+
+  return handleGatewayRequest(request, "DELETE", slug);
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { slug: string[] } }
+  { params }: { params: Promise<{ slug: string[] }> }
 ) {
-  return handleGatewayRequest(request, "PATCH", params.slug);
+  const { slug } = await params;
+
+  return handleGatewayRequest(request, "PATCH", slug);
 }
 
 export async function OPTIONS(request: NextRequest) {

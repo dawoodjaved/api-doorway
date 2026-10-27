@@ -5,8 +5,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -23,7 +25,7 @@ export async function POST(
     }
 
     const api = await prisma.aPI.update({
-      where: { id: params.apiId },
+      where: { id: apiId },
       data: { isApproved: true },
       select: {
         id: true,

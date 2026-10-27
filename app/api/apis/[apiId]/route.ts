@@ -101,14 +101,16 @@ const apiDetailSelect = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
     const hydrateParam = request.nextUrl.searchParams.get("hydrate");
     // Accept either cuid id or marketplace slug (avoids a full catalog scan client-side)
     let api = await prisma.aPI.findFirst({
       where: {
-        OR: [{ id: params.apiId }, { slug: params.apiId }],
+        OR: [{ id: apiId }, { slug: apiId }],
       },
       select: apiDetailSelect,
     });
@@ -215,8 +217,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -224,7 +228,7 @@ export async function PATCH(
     }
 
     const api = await prisma.aPI.findUnique({
-      where: { id: params.apiId },
+      where: { id: apiId },
     });
 
     if (!api) {
@@ -239,7 +243,7 @@ export async function PATCH(
     const validated = updateAPISchema.parse(body);
 
     const updated = await prisma.aPI.update({
-      where: { id: params.apiId },
+      where: { id: apiId },
       data: validated,
       include: {
         user: {
@@ -269,8 +273,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -278,7 +284,7 @@ export async function DELETE(
     }
 
     const api = await prisma.aPI.findUnique({
-      where: { id: params.apiId },
+      where: { id: apiId },
     });
 
     if (!api) {
@@ -290,7 +296,7 @@ export async function DELETE(
     }
 
     await prisma.aPI.delete({
-      where: { id: params.apiId },
+      where: { id: apiId },
     });
 
     return NextResponse.json({ success: true });

@@ -15,15 +15,17 @@ import { hydrateApiOpenApi } from "@/lib/services/openapi-hydrate";
  */
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const api = await prisma.aPI.findUnique({ where: { id: params.apiId } });
+    const api = await prisma.aPI.findUnique({ where: { id: apiId } });
     if (!api || !api.isApproved || !api.isPublic) {
       return NextResponse.json({ error: "API not found" }, { status: 404 });
     }

@@ -15,10 +15,12 @@ const createVersionSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
-    const access = await requireApiViewAccess(params.apiId);
+    const access = await requireApiViewAccess(apiId);
     if (!access.ok) {
       return NextResponse.json(
         { error: access.status === 404 ? "API not found" : "Forbidden" },
@@ -59,8 +61,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -68,7 +72,7 @@ export async function POST(
     }
 
     const api = await prisma.aPI.findUnique({
-      where: { id: params.apiId },
+      where: { id: apiId },
     });
 
     if (!api) {
@@ -85,7 +89,7 @@ export async function POST(
     // Check if version already exists
     const existing = await prisma.aPIVersion.findFirst({
       where: {
-        apiId: params.apiId,
+        apiId: apiId,
         version: validated.version,
       },
     });
@@ -129,7 +133,7 @@ export async function POST(
     // Create version
     const version = await prisma.aPIVersion.create({
       data: {
-        apiId: params.apiId,
+        apiId: apiId,
         version: validated.version,
         openApiSpec: validated.openApiSpec,
         changelog: validated.changelog,

@@ -4,8 +4,10 @@ import { requireAdmin } from "@/lib/security/require-admin";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { apiId: string } }
+  { params }: { params: Promise<{ apiId: string }> }
 ) {
+  const { apiId } = await params;
+
   try {
     const admin = await requireAdmin();
     if (!admin.ok) return admin.response;
@@ -17,7 +19,7 @@ export async function POST(
       isFeatured = body.isFeatured;
     } else {
       const current = await prisma.aPI.findUnique({
-        where: { id: params.apiId },
+        where: { id: apiId },
         select: { isFeatured: true },
       });
       if (!current) {
@@ -27,7 +29,7 @@ export async function POST(
     }
 
     const updated = await prisma.aPI.update({
-      where: { id: params.apiId },
+      where: { id: apiId },
       data: { isFeatured },
       select: {
         id: true,

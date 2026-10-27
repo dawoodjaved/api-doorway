@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Next 14.2: keep Prisma out of the webpack bundle on Vercel
-    serverComponentsExternalPackages: ["@prisma/client"],
-  },
+  // Keep Prisma out of the webpack/turbopack bundle on Vercel
+  serverExternalPackages: ["@prisma/client"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "api.dicebear.com" },
